@@ -152,28 +152,30 @@ const charData = [
         id: "nefer",
         name: "Нефер",
         level: 90,
-        avatar: "imgs/nefer.png", // Вам нужно будет добавить эту картинку
+        avatar: "imgs/nefer.png",
         element: "dendro",
         weaponType: "catalyst", // Тип оружия - Катализатор
         stats: {
-            hp: { base: 10850, isPercent: false },
-            atk: { base: 310, isPercent: false },
-            def: { base: 645, isPercent: false },
-            em: { base: 0, isPercent: false },
+            hp: { base: 12704, isPercent: false },
+            atk: { base: 344, isPercent: false },
+            def: { base: 799, isPercent: false },
+            em: { base: 100, isPercent: false },
             er: { base: 100.0, isPercent: true },
             critRate: { base: 5.0, isPercent: true },
-            critDmg: { base: 50.0, isPercent: true },
+            critDmg: { base: 88.4, isPercent: true },
             healingBonus: { base: 0, isPercent: true},
             elementDamageBonus: { base: 0, isPercent: true}, // Дендро урон будет в бонусах
         },
         talents: [
             { 
-                type: "normal", title: "Обычная атака: Шепот песков", 
-                desc: "Выполняет до 4 ударов свитками, нанося Дендро урон.",
+                type: "normal", title: "Обычная атака: Удар змеи", 
+                desc: "До четырёх ударов со свирепостью и изяществом змеи, которые наносят Дендро урон.",
                 attributes: [
-                    { name: "Урон 1-го удара", values: [38.1, 40.9, 47.6, 50.4, 53.3] },
-                    { name: "Урон 2-го удара", values: [68.5, 74.0, 79.5, 86.0, 91.5] },
-                    { name: "Урон 3-го удара", values: [92.0, 99.1, 106.2, 115.3, 122.4] }
+                    { name: "Урон атаки 1", values: [38.1, 40.9, 43.8, 47.6, 50.4, 53.3, 57.1, 60.9, 64.7, 68.5, 72.3, 76.1, 80.9] },
+                    { name: "Урон атаки 2", values: [37.6, 40.4, 43.2, 47.0, 49.8, 52.6, 56.3, 60.1, 63.9, 67.6, 71.4, 75.1, 79.8] },
+                    { name: "Урон атаки 3", values: [25.2, 27.1, 29.0, 31.6, 33.4, 35.3, 37.9, 40.4, 42.9, 45.4, 48.0, 50.5, 53.6] },
+                    { name: "Урон атаки 4", values: [61.0, 65.6, 70.1, 76.2, 80.8, 85.4, 91.5, 97.6, 103.7, 109.8, 115.9, 122.0, 129.6] },
+                    { name: "Урон заряженной атаки", values: [130.9, 140.7, 150.5, 163.6, 173.4, 183.2, 196.3, 209.4, 222.5, 235.6, 248.7, 261.8, 278.1] },
                 ]
             },
             {
