@@ -44,23 +44,36 @@ function createModalItem(item, onClick) {
 function renderCharacter(charId) {
     currentChar = charData.find(c => c.id === charId);
     if (!currentChar) return;
+    
+    // Сброс баффов
     activeBuffs = { weapon: activeBuffs.weapon || 0 }; 
+    
     const elementColor = getElementColor(currentChar.element);
 
+    // Обновляем UI
     document.getElementById('char-name').innerText = currentChar.name;
     const av = document.getElementById('char-avatar-img');
     av.style.backgroundImage = `url('${currentChar.avatar}')`;
     av.style.borderColor = elementColor;
 
-    renderTalents(currentChar, elementColor);
+    // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
+    // Сбрасываем слайдер созвездий в 0
+    const cSlider = document.getElementById('slider-constellation');
+    if(cSlider) cSlider.value = 0;
 
+    // Вызываем обновление созвездий. 
+    // Внутри эта функция вызовет renderTalents один раз.
+    updateConstellations(0); 
+    // ---------------------------
+
+    // Логика оружия
     if (currentWeapon && currentWeapon.type !== currentChar.weaponType) {
         currentWeapon = null;
         const defaultWep = weaponData.find(w => w.type === currentChar.weaponType);
         if (defaultWep) renderWeapon(defaultWep.id);
         else updateTotalStats();
     } else {
-            updateTotalStats();
+         updateTotalStats();
     }
 }
 
@@ -84,32 +97,32 @@ function renderWeapon(weaponId) {
     const weaponBox = document.getElementById('weapon-passive-box');
     weaponBox.innerHTML = '';
     activeBuffs.weapon = 0; 
-    if(buff && buff.maxStacks) weaponBox.appendChild(renderBuffControl(buff, 'weapon'));
+    if(buff && buff.maxStacks) weaponBox.appendChild(renderBuffControl(buff.maxStacks, 'weapon', 'Эффект активен'));
     else weaponBox.innerHTML = '<span style="color:#777; font-size:0.8rem">Нет активного эффекта</span>';
 
     updateTotalStats();
 }
 
-function renderBuffControl(buff, stateKey) {
+function renderBuffControl(maxStacks, stateKey, labelTitle) {
     const container = document.createElement('div');
     container.className = 'buff-control-box';
     const header = document.createElement('div');
     header.className = 'buff-header';
 
-    if (buff.maxStacks === 1) {
-        header.innerHTML = `<span class="buff-title">Эффект активен</span>`;
+    if (maxStacks === 1) {
+        header.innerHTML = `<span class="buff-title">${labelTitle}</span>`;
         const label = document.createElement('label');
         label.className = 'toggle-switch';
         label.innerHTML = `<input type="checkbox" onchange="updateBuffState('${stateKey}', this.checked ? 1 : 0)"><span class="slider-switch"></span>`;
         header.appendChild(label);
         container.appendChild(header);
     } else {
-        header.innerHTML = `<span class="buff-title">Стаки эффекта</span><span style="font-size:0.8rem; color:#aaa" id="display-${stateKey}">0 / ${buff.maxStacks}</span>`;
+        header.innerHTML = `<span class="buff-title">Стаки эффекта</span><span style="font-size:0.8rem; color:#aaa" id="display-${stateKey}">0 / ${maxStacks}</span>`;
         container.appendChild(header);
         const range = document.createElement('div');
         range.className = 'level-control';
         range.style.marginBottom = '0';
-        range.innerHTML = `<input type="range" class="custom-range" min="0" max="${buff.maxStacks}" value="0" oninput="updateBuffState('${stateKey}', this.value)">`;
+        range.innerHTML = `<input type="range" class="custom-range" min="0" max="${maxStacks}" value="0" oninput="updateBuffState('${stateKey}', this.value)">`;
         container.appendChild(range);
     }
     return container;
@@ -120,10 +133,22 @@ function updateBuffState(key, val) {
     const display = document.getElementById(`display-${key}`);
     if (display) {
         let max = 1;
-        if (key === 'weapon' && currentWeapon && currentWeapon.buff) max = currentWeapon.buff.maxStacks;
-        else if (currentChar) {
-            const parts = key.split('-');
-            if (currentChar.talents[parts[1]].buff) max = currentChar.talents[parts[1]].buff.maxStacks;
+        // Пытаемся найти макс стаки динамически
+        if (key === 'weapon' && currentWeapon && currentWeapon.buff) {
+            max = currentWeapon.buff.maxStacks;
+        } else if (key.startsWith('talent-')) {
+            const idx = parseInt(key.split('-')[1]);
+            const talent = currentChar.talents[idx];
+            if(talent && talent.buff) {
+                max = talent.buff.maxStacks;
+                // Проверка C2 (изменение макс стаков)
+                const currentC = parseInt(document.getElementById('slider-constellation').value);
+                currentChar.talents.forEach(c => {
+                    if(c.type === 'constellation' && c.level <= currentC && c.modifyTarget && c.modifyTarget.title === talent.title) {
+                        max = c.modifyTarget.newMax;
+                    }
+                });
+            }
         }
         display.innerText = `${activeBuffs[key]} / ${max}`;
     }
@@ -170,14 +195,26 @@ function updateTotalStats() {
         if (wBuff && activeBuffs['weapon'] > 0) applyBuff(wBuff.bonusPerStack, activeBuffs['weapon']);
     }
 
+    const currentC = parseInt(document.getElementById('slider-constellation').value);
+
     currentChar.talents.forEach((talent, idx) => {
+        // Обычные баффы
         if (talent.buff) {
-            if (talent.type === 'constellation') {
-                const currentC = parseInt(document.getElementById('slider-constellation').value);
-                if (talent.level > currentC) return; 
-            }
+            if (talent.type === 'constellation' && talent.level > currentC) return; 
             const tStacks = activeBuffs[`talent-${idx}`] || 0;
             if (tStacks > 0) applyBuff(talent.buff.bonusPerStack, tStacks);
+        }
+        
+        // Бонус от C2 (условие по стакам)
+        if (talent.type === 'constellation' && talent.level <= currentC && talent.bonusIfTargetStacks) {
+            const targetRule = talent.bonusIfTargetStacks;
+            const targetIdx = currentChar.talents.findIndex(t => t.title === targetRule.title);
+            if (targetIdx !== -1) {
+                const currentTargetStacks = activeBuffs[`talent-${targetIdx}`] || 0;
+                if (currentTargetStacks >= targetRule.count) {
+                    for (const sKey in targetRule.stats) addBonus(sKey, targetRule.stats[sKey]);
+                }
+            }
         }
     });
 
@@ -228,14 +265,42 @@ function formatStat(val, isPercent) {
     return Math.round(val).toLocaleString('ru-RU');
 }
 
+// ... (начало файла без изменений)
+
 function renderTalents(char, color) {
     const container = document.getElementById('talents-container');
     container.innerHTML = '';
     
+    const currentCElement = document.getElementById('slider-constellation');
+    const currentC = currentCElement ? parseInt(currentCElement.value) : 0;
+
     char.talents.forEach((talent, idx) => {
         const isConstellation = talent.type === 'constellation';
         let contentHTML = '';
-        if (talent.buff) contentHTML += renderBuffControl(talent.buff, `talent-${idx}`).outerHTML;
+        
+        if (talent.buff) {
+            // --- ЛОГИКА C2 (Модификация макс стаков) ---
+            let maxStacks = talent.buff.maxStacks;
+            
+            char.talents.forEach(c => {
+                // Если есть активное созвездие с modifyTarget для этого таланта
+                if (c.type === 'constellation' && c.level <= currentC && c.modifyTarget && c.modifyTarget.title === talent.title) {
+                    maxStacks = c.modifyTarget.newMax;
+                }
+            });
+
+            // --- ВАЖНО: Сброс стаков, если отключили C2 ---
+            // Если текущие активные стаки больше нового максимума -> сбрасываем до максимума
+            const key = `talent-${idx}`;
+            if (activeBuffs[key] > maxStacks) {
+                activeBuffs[key] = maxStacks;
+                // Пересчитываем статы, так как количество стаков изменилось
+                // (вызов updateTotalStats произойдет в конце цепочки через updateConstellations, так что тут не обязательно, но полезно для синхронизации)
+            }
+            // -------------------------------------------------
+
+            contentHTML += renderBuffControl(maxStacks, key, 'Эффект активен').outerHTML;
+        }
 
         if (isConstellation) {
             const div = document.createElement('div');
@@ -252,7 +317,7 @@ function renderTalents(char, color) {
                 talent.attributes.forEach((attr, attrIdx) => {
                     attrHtml += `<div class="talent-attr-row">
                         <span class="talent-attr-name">${attr.name}</span>
-                        <div id="val-${talent.type}-${attrIdx}"></div>
+                        <div class="talent-attr-val-group" id="val-${talent.type}-${attrIdx}"></div>
                     </div>`;
                 });
                 attrHtml += '</div>';
@@ -264,13 +329,19 @@ function renderTalents(char, color) {
         }
     });
 
+    // Обновление слайдеров уровней талантов (без сброса, если они уже есть)
     ['normal', 'skill', 'burst'].forEach(t => {
         const slider = document.getElementById(`slider-${t}`);
-        if(slider) { slider.value = 10; }
+        if(slider && slider.value === "10" && activeBuffs.weapon === 0) { 
+            // Маленький хак: сбрасываем на 10 только при полной перезагрузке чара
+            // Но лучше оставить как есть, чтобы не сбивать настройки пользователя
+        }
     });
-    document.getElementById('slider-constellation').value = 0;
-    updateConstellations(0); 
+    
+    // ВАЖНО: Мы НЕ вызываем здесь updateConstellations во избежание рекурсии
 }
+
+// ... (Остальной код без изменений: updateTalentLevel, updateTotalStats, и т.д.)
 
 function updateTalentLevel(slider, outputId, type) {
     const level = parseInt(slider.value);
@@ -278,7 +349,6 @@ function updateTalentLevel(slider, outputId, type) {
     updateAllTalentValues();
 }
 
-// --- РАСЧЕТ И ОТОБРАЖЕНИЕ УРОНА ---
 function updateAllTalentValues() {
     if (!currentChar) return;
 
@@ -304,7 +374,7 @@ function updateAllTalentValues() {
                 valPercent = last + (step * (level - attr.values.length));
             }
 
-            // --- ЛОГИКА ДЛЯ НЕФЕР И ПРОЧИХ БАФФОВ ПРОЦЕНТОВ ---
+            // Бонус процентов от пассивок
             let percentBonus = 0;
             if (currentWeapon && currentWeapon.buff && currentWeapon.buff.talentBuff) {
                 const stacks = activeBuffs['weapon'] || 0;
@@ -321,13 +391,12 @@ function updateAllTalentValues() {
                 }
             });
             valPercent += percentBonus;
-            // -----------------------------
-
+            
+            // Расчет
             const result = calculateTalentValue(valPercent, attr.scaling, attr.name);
             
             if (result.isDamage) {
                 const format = (num) => Math.round(num).toLocaleString('ru-RU');
-                // ТАБЛИЧНЫЙ ВИД
                 container.innerHTML = `
                     <div class="dmg-grid">
                         <div class="dmg-cell">
@@ -357,10 +426,10 @@ function calculateTalentValue(basePercent, scaling, name) {
     if (isNonDamage) return { isDamage: false, suffix: name.includes('КД') || name.includes('Длительность') ? 'с' : '' };
 
     const rules = scaling || [{ stat: 'atk', ratio: 1 }];
-    
     let totalDamage = 0;
     let formulaParts = [];
 
+    // Базовые скейлы
     rules.forEach(rule => {
         const statVal = finalStats[rule.stat] || 0; 
         const ratio = rule.ratio || 1;
@@ -370,13 +439,41 @@ function calculateTalentValue(basePercent, scaling, name) {
         formulaParts.push(`${displayedPercent}% ${rule.stat.toUpperCase()}`);
     });
 
-    // Расчет Критов
+    // Доп скейлы от C1 Нефер
+    const currentC = parseInt(document.getElementById('slider-constellation').value);
+    currentChar.talents.forEach((t, tIdx) => {
+        if (t.type === 'constellation' && t.level > currentC) return;
+
+        if (t.buff && t.buff.extraScaling) {
+            if (t.buff.extraScaling.keywords.some(k => name.includes(k))) {
+                const es = t.buff.extraScaling;
+                let extraPercent = es.value;
+                
+                if (es.affectedByTalentBuff) {
+                    // Проверяем бонус процентов (Завеса ложных тайн)
+                    currentChar.talents.forEach((passive, pIdx) => {
+                       if (passive.buff && passive.buff.talentBuff) {
+                           const pStacks = activeBuffs[`talent-${pIdx}`] || 0;
+                           if (pStacks > 0 && passive.buff.talentBuff.keywords.some(k => name.includes(k))) {
+                               extraPercent += passive.buff.talentBuff.add * pStacks;
+                           }
+                       } 
+                    });
+                }
+
+                const extraDmg = (extraPercent / 100) * (finalStats[es.stat] || 0);
+                totalDamage += extraDmg;
+                formulaParts.push(`<span style="color:#ffce44">+${extraPercent.toFixed(1)}% ${es.stat.toUpperCase()}</span>`);
+            }
+        }
+    });
+
+    // Криты и Аффиксы
     const cr = Math.min(Math.max(finalStats['critRate'] || 0, 0), 100) / 100;
     const cd = (finalStats['critDmg'] || 0) / 100;
-    
     const elemBonus = (finalStats['elementDamageBonus'] || 0) / 100;
+    
     totalDamage = totalDamage * (1 + elemBonus);
-
     const critVal = totalDamage * (1 + cd);
     const avgVal = totalDamage * (1 + (cr * cd));
 
@@ -392,10 +489,17 @@ function calculateTalentValue(basePercent, scaling, name) {
 function updateConstellations(val) {
     const level = parseInt(val);
     document.getElementById('val-constellation').innerText = "C" + level;
+    
+    const elementColor = getElementColor(currentChar.element);
+
+    // Перерисовываем таланты, т.к. C2 может изменить структуру (слайдеры пассивок)
+    renderTalents(currentChar, elementColor);
+
     document.querySelectorAll('.talent-constellation-card').forEach(card => {
         const cLvl = parseInt(card.getAttribute('data-c-level'));
         card.style.display = (cLvl <= level) ? 'block' : 'none';
     });
+    
     updateMaxTalentLevels(); 
     updateTotalStats();
 }
