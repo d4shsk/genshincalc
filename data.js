@@ -212,17 +212,20 @@ const charData = [
                     { 
                         name: "Урон Игры химер I (Тени)",
                         values: [96.0, 103.2, 110.4, 120.0, 127.2, 134.4, 144.0, 153.6, 163.2, 172.8, 182.4, 192.0, 204.0], 
-                        scaling: [{stat: 'em', ratio: 1}]  
+                        scaling: [{stat: 'em', ratio: 1}] ,
+                        isLunarBloom: true
                     },
                     { 
                         name: "Урон Игры химер II (Тени)",
                         values: [96.0, 103.2, 110.4, 120.0, 127.2, 134.4, 144.0, 153.6, 163.2, 172.8, 182.4, 192.0, 204.0], 
-                        scaling: [{stat: 'em', ratio: 1}]  
+                        scaling: [{stat: 'em', ratio: 1}] ,
+                        isLunarBloom: true
                     },
                     { 
                         name: "Урон Игры химер III (Тени)",
                         values: [128.0, 137.6, 147.2, 160.0, 169.6, 179.2, 192.0, 204.8, 217.6, 230.4, 243.2, 256.0, 272.0], 
-                        scaling: [{stat: 'em', ratio: 1}]  
+                        scaling: [{stat: 'em', ratio: 1}]  ,
+                        isLunarBloom: true
                     },
                     { name: "Длительность Танца тени", values: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10] }
                 ]
@@ -268,9 +271,13 @@ const charData = [
                 }
             },
             { 
-                type: "passive", title: "Дар лунного знамения: Коридор сумеречных теней", 
-                desc: "Когда персонажи отряда активируют реакцию Бутонизация, она превращается в Лунную бутонизацию, а базовый урон реакции Лунная бутонизация увеличивается на 0,0175% за каждую единицу мастерства стихий Нефер. Но пока бонус всегда в максималке - 14 процентов",
-                buff: { maxStacks: 1, bonusPerStack: { elementDamageBonus: 14 } }
+                type: "passive", title: "Дар лунного знамения", 
+                desc: "Увеличивает БАЗОВЫЙ урон Лунной бутонизации на 0.0175% за ед. МС (макс 14%).",
+                buff: { 
+                    maxStacks: 1, 
+                    // Это особый бафф, рассчитывается в script.js на основе МС
+                    bonusPerStack: { lunarBloomBaseBonus: 0 } 
+                }
             },
             { 
                 type: "constellation", 
@@ -331,28 +338,27 @@ const charData = [
                 type: "constellation", 
                 level: 6, 
                 title: "C6: Лунное знамение - Высшее сияние", 
-                desc: "Второй этап Игры химер получает Дендро урон 85% от МС. Завершение навыка наносит 120% от МС. Дендро урон +15%.",
+                desc: "Второй этап Игры химер получает 85% от МС. Финал - 120% от МС. Урон Лунной бутонизации +15%.",
                 buff: { 
                     maxStacks: 1, 
-                    bonusPerStack: { elementDamageBonus: 15 }, // Пассивка на 15% дендро урона
+                    // Вместо elementDamageBonus даем lunarBloomBonus
+                    bonusPerStack: { lunarBloomBonus: 15 },
                     
-                    // НОВЫЙ МАССИВ СКЕЙЛОВ
                     extraScalings: [
                         {
-                            // 1. Второй этап: +85% от МС
                             keywords: ["Урон Игры химер II"], 
                             stat: 'em',                    
                             value: 85,
-                            affectedByTalentBuff: true // Если нужно, чтобы Завеса влияла и на это
+                            affectedByTalentBuff: true,
+                            isLunarBloom: true // Считается как Лунная бутонизация
                         },
                         {
-                            // 2. Финальный удар: 120% от МС
-                            // Добавляем это отображение к первому удару или создаем для него логику
-                            // Здесь привяжем к "Урон навыка (АТК)", чтобы видеть прирост общей мощности
+                            // Привяжем финал к первому удару для отображения
                             keywords: ["Урон Игры химер I"], 
                             stat: 'em',                    
                             value: 120,
-                            affectedByTalentBuff: true
+                            affectedByTalentBuff: true,
+                            isLunarBloom: true
                         }
                     ]
                 }

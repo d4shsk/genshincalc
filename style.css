@@ -96,17 +96,59 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
     background: rgba(30, 35, 45, 0.6); 
     border: 1px solid rgba(255,255,255,0.1); 
     border-radius: 10px; 
-    padding: 15px; 
+    padding: 0; /* Убираем паддинг у карточки, переносим внутрь */
     margin-bottom: 15px; 
     font-size: 0.9rem; 
     color: #ccc; 
     transition: border-color 0.2s;
+    overflow: hidden; /* Чтобы углы не торчали */
 }
+
 .talent-card:hover { border-color: rgba(255,255,255,0.2); }
 .talent-constellation-card { border-left: 4px solid #ffce44; background: linear-gradient(90deg, rgba(255, 206, 68, 0.05), transparent); }
-.talent-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; color: #fff; font-weight: bold; font-size: 1rem; }
 
-.talent-attrs-table { margin-top: 12px; }
+/* Заголовок теперь кликабельный */
+.talent-header { 
+    display: flex; 
+    justify-content: space-between; /* Текст слева, стрелка справа */
+    align-items: center; 
+    padding: 15px; 
+    margin-bottom: 0; 
+    color: #fff; 
+    font-weight: bold; 
+    font-size: 1rem; 
+    cursor: pointer; 
+    background: rgba(255,255,255,0.02);
+    user-select: none;
+}
+
+.talent-header:hover { background: rgba(255,255,255,0.05); }
+
+/* Иконка стрелочки */
+.talent-toggle-icon {
+    transition: transform 0.3s ease;
+    font-size: 0.8rem;
+    color: #777;
+}
+
+/* Содержимое таланта (описание + таблица) */
+.talent-body {
+    padding: 0 15px 15px 15px;
+    display: block; /* По умолчанию открыто */
+}
+
+/* --- СОСТОЯНИЕ "СВЕРНУТО" --- */
+.talent-card.collapsed .talent-body, 
+.talent-constellation-card.collapsed .talent-body {
+    display: none;
+}
+
+.talent-card.collapsed .talent-toggle-icon,
+.talent-constellation-card.collapsed .talent-toggle-icon {
+    transform: rotate(-90deg); /* Поворот стрелки */
+}
+
+/* ... (Остальные стили для таблиц и dmg-grid остаются) ... */
 
 /* --- ТАБЛИЦА УРОНА --- */
 .talent-attr-row { 
