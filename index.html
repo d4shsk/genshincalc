@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Genshin Calculator Interactive</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="style.css">
+
     <script src="data.js"></script>
+    
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -50,6 +53,15 @@
                 <div class="stat-row"><div class="stat-icon"><i class="fa-solid fa-skull"></i></div><div class="stat-name">Крит. урон</div><div class="stat-val stat-base" id="base-critDmg">0%</div><div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-critDmg" placeholder="0" oninput="recalc()"></div><div class="stat-val stat-total" id="total-critDmg">0%</div></div>
                 <div class="stat-row"><div class="stat-icon"><i class="fa-solid fa-plus-square"></i></div><div class="stat-name">Бонус лечения</div><div class="stat-val stat-base" id="base-healingBonus">0%</div><div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-healingBonus" placeholder="0" oninput="recalc()"></div><div class="stat-val stat-total" id="total-healingBonus">0%</div></div>
                 <div class="stat-row"><div class="stat-icon"><i class="fa-solid fa-fire"></i></div><div class="stat-name">Бонус урона элемента</div><div class="stat-val stat-base" id="base-elementDamageBonus">0%</div><div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-elementDamageBonus" placeholder="0" oninput="recalc()"></div><div class="stat-val stat-total" id="total-elementDamageBonus">0%</div></div>
+
+                <div class="stats-section-title">Параметры врага (Хиличурл 90 ур.)</div>
+                <div class="stat-row">
+                    <div class="stat-icon"><i class="fa-solid fa-ghost"></i></div>
+                    <div class="stat-name">Срез сопротивления (%)</div>
+                    <div class="stat-val stat-base"></div>
+                    <div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-resShred" placeholder="0" oninput="recalc()"></div>
+                    <div class="stat-val stat-total" id="total-resShred">0%</div>
+                </div>
             </div>
 
             <div class="panel">

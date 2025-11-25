@@ -272,7 +272,6 @@ const charData = [
                 desc: "Когда персонажи отряда активируют реакцию Бутонизация, она превращается в Лунную бутонизацию, а базовый урон реакции Лунная бутонизация увеличивается на 0,0175% за каждую единицу мастерства стихий Нефер. Но пока бонус всегда в максималке - 14 процентов",
                 buff: { maxStacks: 1, bonusPerStack: { elementDamageBonus: 14 } }
             },
-            // Внутри charData -> Nefer -> talents
             { 
                 type: "constellation", 
                 level: 1, 
@@ -312,16 +311,51 @@ const charData = [
                 desc: "Уровень Элем. навыка +3",
                 levelBoost: { type: 'skill', value: 3 }
             },
-            { type: "constellation", level: 4, title: "C4: Весы души", desc: "Восстанавливает энергию." },
             { 
-                type: "constellation", level: 5, title: "C5: Врата Дуата", 
-                desc: "Уровень Взрыва стихий +3",
+                type: "constellation", 
+                level: 4, 
+                title: "C4: Заблуждения опутывают разум", 
+                desc: "Снижает Дендро сопротивление противника на 20%.",
+                buff: { 
+                    maxStacks: 1, 
+                    // Используем ключ resShred, чтобы добавить к общему срезу резистов
+                    bonusPerStack: { resShred: 20 } 
+                }
+            },
+            { 
+                type: "constellation", level: 5, title: "Возможности кроются во мгновениях", 
+                desc: "Увеличивает уровень навыка Священная клятва: Химера истинного взора на 3.",
                 levelBoost: { type: 'burst', value: 3 }
             },
             { 
-                type: "constellation", level: 6, title: "C6: Истинное имя", 
-                desc: "Увеличивает Крит. урон Дендро атак на 60%.",
-                buff: { maxStacks: 1, bonusPerStack: { critDmg: 60 } }
+                type: "constellation", 
+                level: 6, 
+                title: "C6: Лунное знамение - Высшее сияние", 
+                desc: "Второй этап Игры химер получает Дендро урон 85% от МС. Завершение навыка наносит 120% от МС. Дендро урон +15%.",
+                buff: { 
+                    maxStacks: 1, 
+                    bonusPerStack: { elementDamageBonus: 15 }, // Пассивка на 15% дендро урона
+                    
+                    // НОВЫЙ МАССИВ СКЕЙЛОВ
+                    extraScalings: [
+                        {
+                            // 1. Второй этап: +85% от МС
+                            keywords: ["Урон Игры химер II"], 
+                            stat: 'em',                    
+                            value: 85,
+                            affectedByTalentBuff: true // Если нужно, чтобы Завеса влияла и на это
+                        },
+                        {
+                            // 2. Финальный удар: 120% от МС
+                            // Добавляем это отображение к первому удару или создаем для него логику
+                            // Здесь привяжем к "Урон навыка (АТК)", чтобы видеть прирост общей мощности
+                            keywords: ["Урон Игры химер I"], 
+                            stat: 'em',                    
+                            value: 120,
+                            affectedByTalentBuff: true
+                        }
+                    ]
+                }
             },
         ]
     }
