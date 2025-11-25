@@ -141,17 +141,19 @@ function renderTalents(char, color) {
         const isConstellation = talent.type === 'constellation';
         let contentHTML = '';
         
+        // --- ЛОГИКА БАФФОВ (включая C2 Клоринды/Нефер) ---
         if (talent.buff) {
-            // ЛОГИКА C2: Проверка модификации макс. стаков
             let maxStacks = talent.buff.maxStacks;
+            
+            // Проверяем, меняют ли созвездия лимит стаков этой пассивки
             char.talents.forEach(c => {
                 if (c.type === 'constellation' && c.level <= currentC && c.modifyTarget && c.modifyTarget.title === talent.title) {
-                    maxStacks = c.modifyTarget.newMax;
+                    if (c.modifyTarget.newMax) maxStacks = c.modifyTarget.newMax;
                 }
             });
 
-            // Сброс стаков при уменьшении лимита (отключение С2)
             const key = `talent-${idx}`;
+            // Если стаков больше нового лимита (например при отключении С2) - сбрасываем
             if (activeBuffs[key] > maxStacks) {
                 activeBuffs[key] = maxStacks;
             }
@@ -159,7 +161,7 @@ function renderTalents(char, color) {
             contentHTML += renderBuffControl(maxStacks, key, 'Эффект активен').outerHTML;
         }
 
-        // Таблица атрибутов
+        // --- ТАБЛИЦА АТРИБУТОВ ---
         let attrHtml = '';
         const isActive = ['normal', 'skill', 'burst'].includes(talent.type);
         if (isActive && talent.attributes) {
@@ -173,8 +175,9 @@ function renderTalents(char, color) {
             attrHtml += '</div>';
         }
 
-        // Сборка HTML карточки
+        // --- СБОРКА HTML (ИСПРАВЛЕННАЯ) ---
         const cardClass = isConstellation ? 'talent-constellation-card' : 'talent-card';
+        
         let headerLeft = '';
         if (isConstellation) {
             headerLeft = `<div><span style="background:#333;padding:2px 6px;border-radius:4px;margin-right:8px;border:1px solid #555;font-size:0.8rem">C${talent.level}</span> ${talent.title}</div>`;
@@ -184,11 +187,13 @@ function renderTalents(char, color) {
 
         const div = document.createElement('div');
         div.className = cardClass;
+        
         if (isConstellation) {
             div.setAttribute('data-c-level', talent.level);
             div.style.display = 'none'; 
         }
 
+        // ВАЖНО: Возвращаем структуру с talent-header (onclick) и talent-body (отступы)
         div.innerHTML = `
             <div class="talent-header" onclick="toggleTalent(this)">
                 ${headerLeft}
@@ -203,11 +208,20 @@ function renderTalents(char, color) {
         container.appendChild(div);
     });
 
-    // Инициализация слайдеров (если это первый рендер)
+    // Инициализация слайдеров
     ['normal', 'skill', 'burst'].forEach(t => {
         const slider = document.getElementById(`slider-${t}`);
         if(slider && slider.value === "10" && activeBuffs.weapon === 0) {}
     });
+    
+    // Вызываем обновление видимости созвездий (но не их логику пересчета, чтобы избежать рекурсии, 
+    // так как renderTalents уже вызывается из updateConstellations)
+    if (currentCElement) {
+        document.querySelectorAll('.talent-constellation-card').forEach(card => {
+            const cLvl = parseInt(card.getAttribute('data-c-level'));
+            card.style.display = (cLvl <= currentC) ? 'block' : 'none';
+        });
+    }
 }
 
 function renderBuffControl(maxStacks, stateKey, labelTitle) {
@@ -293,28 +307,52 @@ function updateTotalStats() {
     totalBaseStats = {};
     bonusStats = {}; 
 
+    // 1. База персонажа
     for (const key in currentChar.stats) totalBaseStats[key] = currentChar.stats[key].base;
 
+    // 2. Оружие
     if (currentWeapon) {
         totalBaseStats['atk'] += currentWeapon.stats.baseAtk;
         const sub = currentWeapon.stats.subStat;
         if(sub) addBonus(sub.key, sub.value);
         
         const wBuff = currentWeapon.buff;
-        if (wBuff && activeBuffs['weapon'] > 0) applyBuff(wBuff.bonusPerStack, activeBuffs['weapon']);
+        if (wBuff) {
+            // А) Применяем статичный бонус (если есть), например 20% КУ у Отпущения
+            if (wBuff.bonusFlat) {
+                applyBuff(wBuff.bonusFlat, 1);
+            }
+
+            // Б) Применяем стакаемый бонус
+            const wStacks = activeBuffs['weapon'] || 0;
+            if (wStacks > 0 && wBuff.bonusPerStack) {
+                applyBuff(wBuff.bonusPerStack, wStacks);
+            }
+        }
     }
 
     const currentC = parseInt(document.getElementById('slider-constellation').value);
 
+    // 3. Таланты
     currentChar.talents.forEach((talent, idx) => {
-        // Обычные баффы
         if (talent.buff) {
             if (talent.type === 'constellation' && talent.level > currentC) return; 
+            
+            // То же самое для талантов: поддержка bonusFlat и bonusPerStack
+            
+            // А) Статичный бонус таланта (если вдруг понадобится)
+            if (talent.buff.bonusFlat) {
+                applyBuff(talent.buff.bonusFlat, 1);
+            }
+
+            // Б) Стакаемый бонус
             const tStacks = activeBuffs[`talent-${idx}`] || 0;
-            if (tStacks > 0) applyBuff(talent.buff.bonusPerStack, tStacks);
+            if (tStacks > 0 && talent.buff.bonusPerStack) {
+                applyBuff(talent.buff.bonusPerStack, tStacks);
+            }
         }
         
-        // Бонусы по условию (C2 Нефер)
+        // Логика C2 и прочих условий
         if (talent.type === 'constellation' && talent.level <= currentC && talent.bonusIfTargetStacks) {
             const targetRule = talent.bonusIfTargetStacks;
             const targetIdx = currentChar.talents.findIndex(t => t.title === targetRule.title);
@@ -327,6 +365,7 @@ function updateTotalStats() {
         }
     });
 
+    // Рендер левой панели
     for (const key in totalBaseStats) {
         const el = document.getElementById(`base-${key}`);
         if (el) {
@@ -429,41 +468,69 @@ function updateAllTalentValues() {
             if (level <= attr.values.length) {
                 valPercent = attr.values[level - 1];
             } else {
+                // Экстраполяция
                 const last = attr.values[attr.values.length - 1];
                 const prev = attr.values[attr.values.length - 2];
                 const step = last - prev;
                 valPercent = last + (step * (level - attr.values.length));
             }
 
-            // Бонус процентов от пассивок (Завеса ложных тайн)
-            let percentBonus = 0;
+            // --- СБОР БОНУСОВ ---
+            let percentBonus = 0; // Доп % (Нефер)
+            let flatBonus = 0;    // Доп Урон числом (Клоринда)
+            let collectedExtraScalings = []; // Доп скейлы (Нефер С1/С6)
+
+            const currentC = parseInt(document.getElementById('slider-constellation').value);
+
+            // 1. Оружие
             if (currentWeapon && currentWeapon.buff && currentWeapon.buff.talentBuff) {
                 const stacks = activeBuffs['weapon'] || 0;
                 if (stacks > 0 && currentWeapon.buff.talentBuff.keywords.some(k => attr.name.includes(k))) {
                     percentBonus += currentWeapon.buff.talentBuff.add * stacks;
                 }
             }
+
+            // 2. Таланты и Созвездия
             currentChar.talents.forEach((t, tIdx) => {
-                const currentC = parseInt(document.getElementById('slider-constellation').value);
                 if (t.type === 'constellation' && t.level > currentC) return;
 
-                if (t.buff && t.buff.talentBuff) {
-                    const stacks = activeBuffs[`talent-${tIdx}`] || 0;
-                    if (stacks > 0 && t.buff.talentBuff.keywords.some(k => attr.name.includes(k))) {
-                        percentBonus += t.buff.talentBuff.add * stacks;
-                    }
-                }
-            });
-            valPercent += percentBonus;
-            
-            // Сбор доп скейлов
-            let collectedExtraScalings = [];
-            const currentC = parseInt(document.getElementById('slider-constellation').value);
-            currentChar.talents.forEach((t, tIdx) => {
-                if (t.type === 'constellation' && t.level > currentC) return;
                 if (t.buff) {
                     const stacks = activeBuffs[`talent-${tIdx}`] || 0;
                     const isActive = t.buff.maxStacks > 0 ? stacks > 0 : true;
+
+                    // А) Процентный бонус (talentBuff)
+                    if (isActive && t.buff.talentBuff) {
+                        if (t.buff.talentBuff.keywords.some(k => attr.name.includes(k))) {
+                            percentBonus += t.buff.talentBuff.add * stacks;
+                        }
+                    }
+
+                    // Б) Добавочный Базовый Урон (additiveBaseDmg) - КЛОРИНДА
+                    if (isActive && t.buff.additiveBaseDmg) {
+                        // Проверяем модификации от C2 (перезапись параметров)
+                        let rule = { ...t.buff.additiveBaseDmg }; // Копия
+                        
+                        // Ищем C2 (или другое созвездие), которое модифицирует эту пассивку
+                        currentChar.talents.forEach(c => {
+                            if (c.type === 'constellation' && c.level <= currentC && c.modifyTarget && c.modifyTarget.title === t.title && c.modifyTarget.newAdditive) {
+                                // Применяем улучшения (например, 20% -> 30%, 1800 -> 2700)
+                                rule.percent = c.modifyTarget.newAdditive.percent;
+                                rule.max = c.modifyTarget.newAdditive.max;
+                            }
+                        });
+
+                        if (rule.keywords.some(k => attr.name.includes(k))) {
+                            const statVal = finalStats[rule.stat] || 0;
+                            // Формула: (Stat * Percent% * Stacks)
+                            let addedDmg = statVal * (rule.percent / 100) * stacks;
+                            // Применяем кап (1800 или 2700)
+                            if (addedDmg > rule.max) addedDmg = rule.max;
+                            
+                            flatBonus += addedDmg;
+                        }
+                    }
+
+                    // В) Доп. скейлы (extraScalings) - НЕФЕР
                     if (isActive) {
                         if (t.buff.extraScaling && t.buff.extraScaling.keywords.some(k => attr.name.includes(k))) {
                             collectedExtraScalings.push(t.buff.extraScaling);
@@ -477,8 +544,12 @@ function updateAllTalentValues() {
                 }
             });
 
+            // Добавляем percentBonus к базе
+            valPercent += percentBonus;
+
             const isLunarBloom = attr.isLunarBloom || false;
-            const result = calculateTalentValue(valPercent, attr.scaling, attr.name, collectedExtraScalings, percentBonus, isLunarBloom);
+            // Передаем flatBonus в функцию расчета
+            const result = calculateTalentValue(valPercent, attr.scaling, attr.name, collectedExtraScalings, percentBonus, isLunarBloom, flatBonus);
             
             if (result.isDamage) {
                 const format = (num) => Math.round(num).toLocaleString('ru-RU');
@@ -506,7 +577,7 @@ function updateAllTalentValues() {
     });
 }
 
-function calculateTalentValue(totalBasePercent, scaling, name, extraScalings = [], percentBonus = 0, isLunarBloom = false) {
+function calculateTalentValue(totalBasePercent, scaling, name, extraScalings = [], percentBonus = 0, isLunarBloom = false, flatBonus = 0) {
     const isNonDamage = name.includes('КД') || name.includes('Длительность') || name.includes('Стоимость') || name.includes('Энергия');
     if (isNonDamage) return { isDamage: false, suffix: name.includes('КД') || name.includes('Длительность') ? 'с' : '' };
 
@@ -515,6 +586,7 @@ function calculateTalentValue(totalBasePercent, scaling, name, extraScalings = [
     let baseDmg = 0;
     let formulaParts = [];
 
+    // 1. Стандартные скейлы
     rules.forEach(rule => {
         const statVal = finalStats[rule.stat] || 0; 
         const ratio = rule.ratio || 1;
@@ -524,42 +596,37 @@ function calculateTalentValue(totalBasePercent, scaling, name, extraScalings = [
         formulaParts.push(`${displayedPercent}% ${rule.stat.toUpperCase()}`);
     });
 
+    // 2. Доп. скейлы (Нефер)
     extraScalings.forEach(es => {
-        // Если это extraScaling, нужно проверить его тип. Если он тоже Lunar Bloom, это влияет на логику?
-        // В текущей реализации isLunarBloom передается из атрибута таланта. 
-        // Если доп. скейл из С6 тоже считается Lunar Bloom (как сказано в описании), он просто добавляется к базе.
-        // А флаг isLunarBloom у таланта "включает" множитель реакции для ВСЕЙ базы.
-        
         let extraPercent = es.value;
         if (es.affectedByTalentBuff) extraPercent += percentBonus;
-        
         const extraDmgVal = (extraPercent / 100) * (finalStats[es.stat] || 0);
         baseDmg += extraDmgVal;
         formulaParts.push(`<span style="color:#ffce44">+${extraPercent.toFixed(1)}% ${es.stat.toUpperCase()}</span>`);
     });
 
+    // 3. Добавочный урон (Клоринда, Юнь Цзинь, Шэнь Хэ)
+    // Прибавляется к Base Damage ДО умножения на бонусы/криты
+    if (flatBonus > 0) {
+        baseDmg += flatBonus;
+        formulaParts.push(`<span style="color:#81c784">${Math.round(flatBonus)} Flat</span>`);
+    }
+
+    // 4. Множители
     let finalBase = baseDmg;
     let bonusMult = 1;
 
     if (isLunarBloom) {
-        // Lunar Bloom Formula
         const baseBonus = (finalStats['lunarBloomBaseBonus'] || 0) / 100;
         const em = finalStats['em'] || 0;
         const emCurve = (6 * em) / (em + 2000); 
         const reactBonus = (finalStats['lunarBloomBonus'] || 0) / 100;
-        
-        // Множитель реакций
         const totalReactMult = 1 + emCurve + reactBonus;
         
-        // Финальная база = Базовый урон * (1 + Дар лунного знамения) * (1 + Кривая МС + С6/Аффиксы Луны)
         finalBase = baseDmg * (1 + baseBonus) * totalReactMult;
-        
-        // Для Лунной бутонизации обычные аффиксы не работают, работает только бонус реакции
         bonusMult = 1; 
-        
         formulaParts.push(`<span style="color:#a5c83b">(LUNAR)</span>`);
     } else {
-        // Обычный урон
         const elemBonus = (finalStats['elementDamageBonus'] || 0) / 100;
         bonusMult = 1 + elemBonus;
     }

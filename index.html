@@ -22,7 +22,7 @@
             <i class="fa-solid fa-user"></i>
         </div>
         <div class="sidebar-icon" onclick="switchTab('weapon')" id="tab-btn-weapon" title="Оружие">
-            <i class="fa-solid fa-xmarks-lines"></i>
+            <img src="imgs/sword.png" alt="Weapon" class="custom-sidebar-img">
         </div>
     </div>
 
@@ -116,9 +116,15 @@
                     <div class="weapon-stat-display"><span class="weapon-stat-label">Базовая атака</span><span class="weapon-stat-val" id="weapon-base-atk-val">0</span></div>
                     <div class="weapon-stat-display"><span class="weapon-stat-label" id="weapon-substat-label">Характеристика</span><span class="weapon-stat-val" id="weapon-substat-val">0%</span></div>
                     <div class="talent-card" style="margin-top: 20px;">
-                        <div class="talent-header"><i class="fa-solid fa-bolt"></i> Пассивная способность</div>
-                        <p id="weapon-desc" style="opacity: 0.8; font-size: 0.85rem; margin-bottom: 15px;">Описание</p>
-                        <div id="weapon-passive-box"></div>
+                        <div class="talent-header" onclick="toggleTalent(this)">
+                            <span><i class="fa-solid fa-bolt"></i> Пассивная способность</span>
+                            <i class="fa-solid fa-chevron-down talent-toggle-icon"></i>
+                        </div>
+                        
+                        <div class="talent-body">
+                            <p id="weapon-desc" style="opacity: 0.8; font-size: 0.85rem; margin-bottom: 15px;">Описание</p>
+                            <div id="weapon-passive-box"></div>
+                        </div>
                     </div>
                 </div>
             </div>

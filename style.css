@@ -210,3 +210,29 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .select-item { display: flex; align-items: center; gap: 15px; padding: 12px; border-radius: 10px; cursor: pointer; transition: background 0.2s; margin-bottom: 5px; }
 .select-item:hover { background: rgba(255,255,255,0.05); }
 .select-item img { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; background: #222; }
+
+/* --- Стили для кастомной иконки в сайдбаре --- */
+.custom-sidebar-img {
+    width: 24px; /* Размер как у иконок шрифта */
+    height: 24px;
+    object-fit: contain;
+    transition: all 0.2s;
+    
+    /* Состояние "Не активно": Делаем серым и тусклым */
+    opacity: 0.5;
+    filter: grayscale(100%);
+}
+
+/* Состояние "При наведении" */
+.sidebar-icon:hover .custom-sidebar-img {
+    opacity: 0.8;
+}
+
+/* Состояние "Активно" (выбрана вкладка) */
+.sidebar-icon.active .custom-sidebar-img {
+    opacity: 1;
+    filter: grayscale(0%); /* Возвращаем оригинальные цвета */
+    /* Или, если картинка белая и вы хотите покрасить её в золото темы (#dcbfa8), 
+       раскомментируйте строку ниже (работает только для белых PNG): */
+    /* filter: invert(85%) sepia(28%) saturate(591%) hue-rotate(324deg) brightness(93%) contrast(89%); */
+}
