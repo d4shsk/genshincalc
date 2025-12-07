@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Genshin Calculator Interactive</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="style.css">
-    <script type="module" src="js/main.js"></script>
-</head>
+
+    <script src="js/main.js" type="module"></script> 
+    </head>
 <body>
 
     <div class="modal-overlay" id="modalOverlay">
@@ -22,8 +24,8 @@
             <i class="fa-solid fa-user"></i>
         </div>
         <div class="sidebar-icon" onclick="switchTab('weapon')" id="tab-btn-weapon" title="Оружие">
-            <img src="imgs/sword.png" alt="Weapon" class="custom-sidebar-img">
-        </div>
+            <i class="fa-solid fa-khanda"></i> 
+            </div>
     </div>
 
     <div class="main-container">
@@ -33,11 +35,13 @@
         </div>
 
         <div class="content-grid">
+            
             <div class="panel">
                 <div class="stats-header">
                     <div></div> <div>База</div> <div>Бонус</div> <div>Всего</div>
                 </div>
                 <div class="stats-section-title">Основные характеристики</div>
+                
                 <div class="stat-row"><div class="stat-icon"><i class="fa-solid fa-droplet"></i></div><div class="stat-name">HP</div><div class="stat-val stat-base" id="base-hp">0</div><div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-hp" placeholder="0" oninput="recalc()"></div><div class="stat-val stat-total" id="total-hp">0</div></div>
                 <div class="stat-row"><div class="stat-icon"><i class="fa-solid fa-gavel"></i></div><div class="stat-name">Сила атаки</div><div class="stat-val stat-base" id="base-atk">0</div><div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-atk" placeholder="0" oninput="recalc()"></div><div class="stat-val stat-total" id="total-atk">0</div></div>
                 <div class="stat-row"><div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div><div class="stat-name">Защита</div><div class="stat-val stat-base" id="base-def">0</div><div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-def" placeholder="0" oninput="recalc()"></div><div class="stat-val stat-total" id="total-def">0</div></div>
@@ -49,13 +53,21 @@
                 <div class="stat-row"><div class="stat-icon"><i class="fa-solid fa-skull"></i></div><div class="stat-name">Крит. урон</div><div class="stat-val stat-base" id="base-critDmg">0%</div><div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-critDmg" placeholder="0" oninput="recalc()"></div><div class="stat-val stat-total" id="total-critDmg">0%</div></div>
                 <div class="stat-row"><div class="stat-icon"><i class="fa-solid fa-plus-square"></i></div><div class="stat-name">Бонус лечения</div><div class="stat-val stat-base" id="base-healingBonus">0%</div><div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-healingBonus" placeholder="0" oninput="recalc()"></div><div class="stat-val stat-total" id="total-healingBonus">0%</div></div>
                 <div class="stat-row"><div class="stat-icon"><i class="fa-solid fa-fire"></i></div><div class="stat-name">Бонус урона элемента</div><div class="stat-val stat-base" id="base-elementDamageBonus">0%</div><div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-elementDamageBonus" placeholder="0" oninput="recalc()"></div><div class="stat-val stat-total" id="total-elementDamageBonus">0%</div></div>
-                
+
                 <div class="stat-row">
                     <div class="stat-icon"><i class="fa-solid fa-moon"></i></div>
                     <div class="stat-name">Бонус Лунной бут.</div>
                     <div class="stat-val stat-base" id="base-lunarBonus">0%</div>
                     <div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-lunarBonus" placeholder="0" oninput="recalc()"></div>
                     <div class="stat-val stat-total" id="total-lunarBonus">0%</div>
+                </div>
+
+                <div class="stat-row" id="row-bondOfLife" style="display: none;">
+                    <div class="stat-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+                    <div class="stat-name">Долг жизни (%)</div>
+                    <div class="stat-val stat-base"></div>
+                    <div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-bondOfLife" placeholder="0" oninput="recalc()"></div>
+                    <div class="stat-val stat-total" id="total-bondOfLife">0%</div>
                 </div>
 
                 <div class="stats-section-title">Параметры врага (Хиличурл 90 ур.)</div>
@@ -66,9 +78,8 @@
                     <div style="padding: 0 5px;"><input type="number" class="stat-input" id="input-resShred" placeholder="0" oninput="recalc()"></div>
                     <div class="stat-val stat-total" id="total-resShred">0%</div>
                 </div>
-            </div>
-
-            <div class="panel">
+            </div> <div class="panel">
+                
                 <div id="tab-content-char" class="tab-content active">
                     <div class="item-header">
                         <div class="char-avatar" id="char-avatar-img" onclick="openModal('char')"></div>
@@ -100,6 +111,7 @@
                         <input type="range" class="custom-range" id="slider-constellation" min="0" max="6" value="0" oninput="updateConstellations(this.value)">
                         <div class="talent-val" id="val-constellation">C0</div>
                     </div>
+                    
                     <div id="talents-container"></div>
                 </div>
 
@@ -115,20 +127,18 @@
                     <p style="margin-bottom: 10px; color: #aaa;">Характеристики (Ур. 90)</p>
                     <div class="weapon-stat-display"><span class="weapon-stat-label">Базовая атака</span><span class="weapon-stat-val" id="weapon-base-atk-val">0</span></div>
                     <div class="weapon-stat-display"><span class="weapon-stat-label" id="weapon-substat-label">Характеристика</span><span class="weapon-stat-val" id="weapon-substat-val">0%</span></div>
+                    
                     <div class="talent-card" style="margin-top: 20px;">
                         <div class="talent-header" onclick="toggleTalent(this)">
                             <span><i class="fa-solid fa-bolt"></i> Пассивная способность</span>
                             <i class="fa-solid fa-chevron-down talent-toggle-icon"></i>
                         </div>
-                        
                         <div class="talent-body">
                             <p id="weapon-desc" style="opacity: 0.8; font-size: 0.85rem; margin-bottom: 15px;">Описание</p>
                             <div id="weapon-passive-box"></div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</body>
+
+            </div> </div> </div> </body>
 </html>
